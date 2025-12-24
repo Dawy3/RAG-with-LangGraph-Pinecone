@@ -14,7 +14,7 @@ jobs:
       # Dummy keys to prevent app.py from crashing on os.getenv
       OPENROUTER_API_KEY: "dummy_key"
       PINECONE_API_KEY: "dummy_key"
-      MODEL_NAME: "openai/gpt-3.5-turbo"
+      MODEL_NAME: "tngtech/deepseek-r1t2-chimera:free"
 
     steps:
       # Step 1: Check out the code
