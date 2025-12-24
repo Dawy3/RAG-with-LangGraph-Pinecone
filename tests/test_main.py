@@ -1,9 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
+import sys
 
 # --- MOCKING EXTERNAL SERVICES ---
-# We mock these modules so the real app.py doesn't try to connect to OpenAI/Pinecone
 mock_pc_module = MagicMock()
 mock_pc_instance = MagicMock()
 mock_pc_instance.list_indexes.return_value.names.return_value = ["modern-rag"]
@@ -20,10 +20,12 @@ with patch.dict("sys.modules", {
     "langchain_openai": mock_chat_module,
     "langchain_community.embeddings": mock_embeddings_module,
 }):
-    # Import app AFTER mocking
-    from app import app
+    # FIX 1: Import the module as 'app_module' instead of just 'app'
+    # This lets us access the file variables (like rag_graph) separately from the FastAPI app
+    import app as app_module
 
-client = TestClient(app)
+# FIX 2: Initialize client using the app inside the module
+client = TestClient(app_module.app)
 
 # --- TESTS ---
 
@@ -31,17 +33,13 @@ def test_index_stats():
     """Test the /index/state endpoint"""
     response = client.get("/index/state")
     assert response.status_code == 200
-    
-    # Ensure you fixed the typo in app.py ('total_vectorstore'), 
-    # otherwise change this string to 'total_vectostore' to match your code.
-    assert "total_vectorstore" in response.json() 
+    assert "total_vectorstore" in response.json()
 
 def test_query_rag_mocked():
     """Test the /query endpoint with a mocked graph response"""
     
-    # FIX: Use patch.object on the imported 'app' module directly
-    # This prevents re-importing the file and causing the Pydantic error
-    with patch.object(app, "rag_graph") as mock_graph:
+    # FIX 3: Patch 'rag_graph' on the MODULE (app_module), not the FastAPI instance
+    with patch.object(app_module, "rag_graph") as mock_graph:
         
         # Configure the mock to return our fake data
         mock_graph.ainvoke.return_value = {
@@ -54,6 +52,10 @@ def test_query_rag_mocked():
 
         payload = {"query": "What is in the document?", "session_id": "test-123"}
         response = client.post("/query", json=payload)
+
+        # Debugging: Print error if it fails
+        if response.status_code != 200:
+            print(response.json())
 
         assert response.status_code == 200
         data = response.json()
