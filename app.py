@@ -247,7 +247,7 @@ async def query_rag(request:QueryRequest):
     """Query the RAG System"""
     
     # Run the graph
-    result = await rag_graph.ainvoke({
+    result = rag_graph.ainvoke({
         "messages": [HumanMessage(content=request.query)],
         "documents": [],
         "query": "",
