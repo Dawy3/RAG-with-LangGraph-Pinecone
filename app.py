@@ -276,7 +276,7 @@ async def get_index_stats():
     stats = index.describe_index_stats()
     
     return {
-        "total_vectostore": stats.total_vector_count,
+        "total_vectorstore": stats.total_vector_count,
         "dimension": stats.dimension,
         "index_fullness": stats.index_fullness,
         "namespace": stats.namespaces
